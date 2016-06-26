@@ -1,10 +1,10 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01-preview/deploymentTemplate.json",
-  "contentVersion": "1.0.0.0",
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "contentVersion": "1.0.0.1",
   "parameters": {
     "adminUserName": {
       "type": "string",
-      "defaultValue": "testuser",
+      "defaultValue": "azureuser",
       "metadata": {
         "description": "Admin user name for the Virtual Machines"
       }
@@ -12,13 +12,13 @@
     "adminPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "Admin password for the Virtual Machines"
+        "description": "Admin password for the VMs (A mix of upper and lower-case characters, digits and symbols)"
       }
     },
     "storageAccountPrefix": {
       "type": "string",
       "metadata": {
-        "description": "Unique namespace for the Storage Account where the Virtual Machine's disks will be placed"
+        "description": "Unique namespace for the Storage Account where the VM disks will be placed (alphahumeric characters only)"
       }
     },
     "dnsNamePrefix": {
@@ -31,6 +31,24 @@
       "type": "string",
       "metadata": {
         "description": "Internal DNS suffix"
+      }
+    },
+    "vnetNewOrExisting" : {
+      "type" : "string",
+      "defaultValue": "new",
+      "allowedValues": [
+        "new",
+        "existing"
+      ],
+      "metadata": {
+        "description": "Indicator for new or exiting Virtual Network"
+      }
+    },
+    "virtualNetworkRGName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource Group Name for Vnet. For new VNet leave it empty, otherwise type in existing resource group name"
       }
     },
     "domainName": {
@@ -71,7 +89,7 @@
     },
     "region": {
       "type": "string",
-      "defaultValue": "westeurope",
+      "defaultValue": "useast2",
       "metadata": {
         "description": "Location where resources will be provisioned"
       }
@@ -85,21 +103,21 @@
     },
     "addressPrefix": {
       "type": "string",
-      "defaultValue": "10.0.0.0/24",
+      "defaultValue": "172.18.0.0/20",
       "metadata": {
         "description": "Address prefix for the VNet"
       }
     },
     "subnetPrefix": {
       "type": "string",
-      "defaultValue": "10.0.0.0/24",
+      "defaultValue": "172.18.1.0/24",
       "metadata": {
         "description": "Subnet Prefix"
       }
     },
     "nodeAddressPrefix": {
       "type": "string",
-      "defaultValue": "10.0.0.",
+      "defaultValue": "172.18.1.",
       "metadata": {
         "description": "Prefix of the nodes IP"
       }
@@ -112,7 +130,7 @@
     },
     "virtualNetworkName": {
       "type": "string",
-      "defaultValue": "clouderavnet",
+      "defaultValue": "clouderanet",
       "metadata": {
         "description": "The name of the virtual network provisioned for the deployment"
       }
@@ -122,7 +140,7 @@
     },
     "subnetName": {
       "type": "string",
-      "defaultValue": "clouderasubnet",
+      "defaultValue": "private",
       "metadata": {
         "description": "Subnet name for the virtual network where resources will be provisioned"
       }
@@ -147,13 +165,15 @@
     },
     "vmSize": {
       "type": "string",
-      "defaultValue": "Standard_DS14",
+      "defaultValue": "Standard_DS14_v2",
       "metadata": {
         "description": "The size of the VMs deployed in the cluster (Defaults to Standard_D14)"
       }
     }
   },
   "variables": {
+    "templateAPIVersion":"2015-11-01",
+    "resourceAPIVersion":"2015-06-15",
     "scriptsUri": "[parameters('scriptUri')]",
     "storageAccount": {
       "prefix": "[parameters('storageAccountPrefix')]",
@@ -205,11 +225,14 @@
         "mode": "Incremental",
         "templateLink": {
           "uri": "[concat(variables('scriptsUri'), '/shared-resources.json')]",
-          "contentVersion": "1.0.0.0"
+          "contentVersion": "1.0.0.1"
         },
         "parameters": {
           "region": {
             "value": "[parameters('region')]"
+          },
+          "resourceAPIVersion":{
+            "value":"[variables('resourceAPIVersion')]"
           },
           "networkSpec": {
             "value": "[variables('networkSpec')]"
@@ -234,7 +257,7 @@
         "mode": "Incremental",
         "templateLink": {
           "uri": "[concat(variables('scriptsUri'), '/master-node.json')]",
-          "contentVersion": "1.0.0.0"
+          "contentVersion": "1.0.0.1"
         },
         "parameters": {
           "dnsNamePrefix": {
@@ -275,7 +298,7 @@
         "mode": "Incremental",
         "templateLink": {
           "uri": "[concat(variables('scriptsUri'), '/data-node.json')]",
-          "contentVersion": "1.0.0.0"
+          "contentVersion": "1.0.0.1"
         },
         "parameters": {
           "dnsNamePrefix": {
@@ -317,7 +340,7 @@
         "mode": "Incremental",
         "templateLink": {
           "uri": "[concat(variables('scriptsUri'), '/setup-cloudera.json')]",
-          "contentVersion": "1.0.0.0"
+          "contentVersion": "1.0.0.1"
         },
         "parameters": {
           "dnsNamePrefix": {

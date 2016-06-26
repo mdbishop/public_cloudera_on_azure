@@ -1,11 +1,14 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.1",
   "parameters": {
-    "dnsNamePrefix": {
-      "type": "string"
+    "vnetID": {
+      "type":"string"
     },
-    "region": {
+    "resourceAPIVersion":{
+      "type":"string"
+    },
+    "dnsNamePrefix": {
       "type": "string"
     },
     "scriptsUri": {
@@ -18,7 +21,7 @@
       "type": "int"
     },
     "vmSpec": {
-      "type": "object"
+      "type": "secureobject"
     },
     "networkSpec": {
       "type": "object"
@@ -28,6 +31,8 @@
     }
   },
   "variables": {
+    "masterIP":"[parameters('networkSpec').masterIP]",
+    "workerIP":"[parameters('networkSpec').workerIP]",
     "vmName": "[concat(parameters('dnsNamePrefix'), '-mn')]",
     "nicName": "[concat(variables('vmName'), '-nic')]",
     "publicIPAddressName": "[concat(variables('vmName'), '-publicIP')]",
@@ -39,7 +44,7 @@
       "apiVersion": "[parameters('resourceAPIVersion')]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('securityGroupName')]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "properties": {
         "securityRules": [
           {
@@ -231,7 +236,7 @@
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[concat(variables('storageAccountName'), copyIndex())]",
       "apiVersion": "[parameters('resourceAPIVersion')]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "copy": {
         "name": "storageAccountLoop",
         "count": "[parameters('vmCount')]"
@@ -244,7 +249,7 @@
       "apiVersion": "[parameters('resourceAPIVersion')]",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[concat(variables('publicIPAddressName'), copyIndex())]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "copy": {
         "name": "publicIPLoop",
         "count": "[parameters('vmCount')]"
@@ -260,7 +265,7 @@
       "apiVersion": "[parameters('resourceAPIVersion')]",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('nicName'), copyIndex())]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'), copyIndex())]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('securityGroupName'))]"
@@ -275,9 +280,9 @@
             "name": "ipconfig1",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(parameters('networkSpec').privateIPPrefix, copyIndex(parameters('networkSpec').masterNodeAddressStart))]",
+              "privateIPAddress": "[concat(parameters('networkSpec').ipOctet01, add(parameters('networkSpec').ipOctet2, div(copyIndex(parameters('networkSpec').ipOctet3), 256)), '.', mod(copyIndex(parameters('networkSpec').ipOctet3), 256))]",
               "subnet": {
-                "id": "[concat(parameters('networkSpec').VnetID, '/subnets/', parameters('networkSpec').virtualNetworkSubnetName)]"
+                "id": "[concat(parameters('vnetID'), '/subnets/', parameters('networkSpec').virtualNetworkSubnetName)]"
               },
               "publicIPAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIPAddresses',concat(variables('publicIPAddressName'), copyIndex()))]"
@@ -299,7 +304,7 @@
         "publisher": "cloudera",
         "product": "cloudera-centos-6"
       },
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "copy": {
         "name": "masterNodeNicLoop",
         "count": "[parameters('vmCount')]"
@@ -316,7 +321,7 @@
           "vmSize": "[parameters('vmSpec').vmSize]"
         },
         "osProfile": {
-          "computername": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",
+          "computerName": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",
           "adminUsername": "[parameters('vmSpec').adminUserName]",
           "adminPassword": "[parameters('vmSpec').adminPassword]",
           "linuxConfiguration": {
@@ -324,15 +329,13 @@
           }
         },
         "storageProfile": {
-          "imageReference":
-          {
+          "imageReference": {
             "publisher": "cloudera",
             "offer": "cloudera-centos-6",
             "sku": "CLOUDERA-CENTOS-6",
             "version": "latest"
           },
-          "osDisk":
-          {
+          "osDisk": {
             "name": "osdisk",
             "vhd": {
               "uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds/', variables('vmName'), copyIndex(), '.vhd')]"
@@ -343,10 +346,37 @@
           "dataDisks": [
             {
               "name": "datadisk0",
-              "diskSizeGB": "1023",
+              "diskSizeGB": "512",
               "lun": 0,
               "vhd": {
                 "Uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds0/', variables('vmName'), '-datadisk0.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk1",
+              "diskSizeGB": "512",
+              "lun": 1,
+              "vhd": {
+                "Uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds1/', variables('vmName'), '-datadisk1.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk2",
+              "diskSizeGB": "512",
+              "lun": 2,
+              "vhd": {
+                "Uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds2/', variables('vmName'), '-datadisk2.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk3",
+              "diskSizeGB": "512",
+              "lun": 3,
+              "vhd": {
+                "Uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds3/', variables('vmName'), '-datadisk3.vhd')]"
               },
               "createOption": "Empty"
             }
@@ -365,7 +395,7 @@
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('vmName'), copyIndex(), '/prepareDisks')]",
       "apiVersion": "[parameters('resourceAPIVersion')]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "copy": {
         "name": "nameNodeNicLoop",
         "count": "[parameters('vmCount')]"
@@ -381,10 +411,9 @@
         "settings": {
           "fileUris": [
             "[concat(parameters('scriptsUri'), '/scripts/prepare-masternode-disks.sh')]",
-            "[concat(parameters('scriptsUri'), '/scripts/initialize-node.sh')]",
-            "[concat(parameters('scriptsUri'), '/scripts/install-postgresql.sh')]"
+            "[concat(parameters('scriptsUri'), '/scripts/initialize-node.sh')]"
           ],
-          "commandToExecute": "[concat('sh initialize-node.sh \"', parameters('vmSpec').adminUserName, '\" ', 'masternode', ' \"', concat(variables('vmName'), copyIndex(),parameters('vmSpec').dnsNameSuffix), '\" \"', parameters('vmSpec').dns1IP, '\" \"', parameters('vmSpec').dns2IP, '\" \"', parameters('vmSpec').dns1Name, '\" \"', parameters('vmSpec').dns2Name, '\" \"', parameters('vmSpec').hadoopAdmin, '\" \"', parameters('vmSpec').domainName, '\" >> /home/$ADMINUSER/initialize-masternode.log 2>&1')]"
+          "commandToExecute": "[concat('sh initialize-node.sh \"', variables('masterIP'), '\" \"', variables('workerIP'), '\" \"', parameters('dnsNamePrefix'), '\" \"', reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn, '\" ', parameters('clusterSpec').masterNodeCount, ' ', parameters('clusterSpec').dataNodeCount, ' \"', parameters('vmSpec').adminUserName, '\" ', 'masternode', ' >> /home/$ADMINUSER/initialize-datanode.log 2>&1')]"
         }
       }
     }

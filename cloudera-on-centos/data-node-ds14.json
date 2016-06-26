@@ -1,11 +1,14 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.1",
   "parameters": {
-    "dnsNamePrefix": {
-      "type": "string"
+    "vnetID": {
+      "type":"string"
     },
-    "region": {
+    "resourceAPIVersion":{
+      "type":"string"
+    },
+    "dnsNamePrefix": {
       "type": "string"
     },
     "scriptsUri": {
@@ -18,7 +21,7 @@
       "type": "int"
     },
     "vmSpec": {
-      "type": "object"
+      "type": "secureobject"
     },
     "networkSpec": {
       "type": "object"
@@ -28,6 +31,8 @@
     }
   },
   "variables": {
+    "masterIP":"[parameters('networkSpec').masterIP]",
+    "workerIP":"[parameters('networkSpec').workerIP]",
     "vmName": "[concat(parameters('dnsNamePrefix'), '-dn')]",
     "nicName": "[concat(variables('vmName'), '-nic')]",
     "storageAccountName": "[concat('dn', parameters('storageAccount').prefix)]",
@@ -39,7 +44,7 @@
       "apiVersion": "[parameters('resourceAPIVersion')]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('securityGroupName')]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "properties": {
         "securityRules": [
           {
@@ -113,6 +118,34 @@
             }
           },
           {
+            "name": "IMPALA.JDBC",
+            "properties": {
+              "description": "Allows Impala JDBC connection",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "21050",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 105,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "IMPALA.Shell",
+            "properties": {
+              "description": "Allows Impala Shell connection",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "21000",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 106,
+              "direction": "Inbound"
+            }
+          },
+          {
             "name": "NTP",
             "properties": {
               "description": "Allows NTP traffic",
@@ -122,7 +155,7 @@
               "sourceAddressPrefix": "*",
               "destinationAddressPrefix": "*",
               "access": "Allow",
-              "priority": 105,
+              "priority": 107,
               "direction": "Inbound"
             }
           }
@@ -131,9 +164,9 @@
     },
     {
       "type": "Microsoft.Storage/storageAccounts",
-      "name": "[concat(variables('storageAccountName'), copyIndex())]",
+      "name": "[concat(copyIndex(), variables('storageAccountName'))]",
       "apiVersion": "[parameters('resourceAPIVersion')]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "copy": {
         "name": "storageAccountLoop",
         "count": "[parameters('vmCount')]"
@@ -146,7 +179,7 @@
       "apiVersion": "[parameters('resourceAPIVersion')]",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[concat(variables('publicIPAddressName'), copyIndex())]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "copy": {
         "name": "publicIPLoop",
         "count": "[parameters('vmCount')]"
@@ -162,7 +195,7 @@
       "apiVersion": "[parameters('resourceAPIVersion')]",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('nicName'), copyIndex())]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'), copyIndex())]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('securityGroupName'))]"
@@ -177,9 +210,9 @@
             "name": "ipconfig1",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(parameters('networkSpec').privateIPPrefix, copyIndex(parameters('networkSpec').dataNodeAddressStart))]",
+              "privateIPAddress": "[concat(parameters('networkSpec').ipOctet01, add(parameters('networkSpec').ipOctet2, div(copyIndex(parameters('networkSpec').datanodeIpOctet3), 256)), '.', mod(copyIndex(parameters('networkSpec').datanodeIpOctet3), 256))]",
               "subnet": {
-                "id": "[concat(parameters('networkSpec').VnetID, '/subnets/', parameters('networkSpec').virtualNetworkSubnetName)]"
+                "id": "[concat(parameters('vnetID'), '/subnets/', parameters('networkSpec').virtualNetworkSubnetName)]"
               },
               "publicIPAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIPAddresses',concat(variables('publicIPAddressName'), copyIndex()))]"
@@ -201,14 +234,14 @@
         "publisher": "cloudera",
         "product": "cloudera-centos-6"
       },
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "copy": {
         "name": "dataNodeNicLoop",
         "count": "[parameters('vmCount')]"
       },
       "dependsOn": [
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), copyIndex())]",
-        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'), copyIndex())]"
+        "[concat('Microsoft.Storage/storageAccounts/', copyIndex(), variables('storageAccountName'))]"
       ],
       "properties": {
         "availabilitySet": {
@@ -218,7 +251,7 @@
           "vmSize": "[parameters('vmSpec').vmSize]"
         },
         "osProfile": {
-          "computername": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",
+          "computerName": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",
           "adminUsername": "[parameters('vmSpec').adminUserName]",
           "adminPassword": "[parameters('vmSpec').adminPassword]",
           "linuxConfiguration": {
@@ -226,18 +259,16 @@
           }
         },
         "storageProfile": {
-          "imageReference":
-          {
+          "imageReference": {
             "publisher": "cloudera",
             "offer": "cloudera-centos-6",
             "sku": "CLOUDERA-CENTOS-6",
             "version": "latest"
           },
-          "osDisk":
-          {
+          "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds/', variables('vmName'), copyIndex(), '.vhd')]"
+              "uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds/', variables('vmName'), copyIndex(), '.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -248,7 +279,7 @@
               "diskSizeGB": "512",
               "lun": 0,
               "vhd": {
-                "Uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds0/', variables('vmName'), '-datadisk0.vhd')]"
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds0/', variables('vmName'), '-datadisk0.vhd')]"
               },
               "createOption": "Empty"
             },
@@ -257,7 +288,7 @@
               "diskSizeGB": "1023",
               "lun": 1,
               "vhd": {
-                "Uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds1/', variables('vmName'), '-datadisk1.vhd')]"
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds1/', variables('vmName'), '-datadisk1.vhd')]"
               },
               "createOption": "Empty"
             },
@@ -266,7 +297,7 @@
               "diskSizeGB": "1023",
               "lun": 2,
               "vhd": {
-                "Uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds2/', variables('vmName'), '-datadisk2.vhd')]"
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds2/', variables('vmName'), '-datadisk2.vhd')]"
               },
               "createOption": "Empty"
             },
@@ -275,7 +306,70 @@
               "diskSizeGB": "1023",
               "lun": 3,
               "vhd": {
-                "Uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds3/', variables('vmName'), '-datadisk3.vhd')]"
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds3/', variables('vmName'), '-datadisk3.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk4",
+              "diskSizeGB": "1023",
+              "lun": 4,
+              "vhd": {
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds4/', variables('vmName'), '-datadisk4.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk5",
+              "diskSizeGB": "1023",
+              "lun": 5,
+              "vhd": {
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds5/', variables('vmName'), '-datadisk5.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk6",
+              "diskSizeGB": "1023",
+              "lun": 6,
+              "vhd": {
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds6/', variables('vmName'), '-datadisk6.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk7",
+              "diskSizeGB": "1023",
+              "lun": 7,
+              "vhd": {
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds7/', variables('vmName'), '-datadisk7.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk8",
+              "diskSizeGB": "1023",
+              "lun": 8,
+              "vhd": {
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds8/', variables('vmName'), '-datadisk8.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk9",
+              "diskSizeGB": "1023",
+              "lun": 9,
+              "vhd": {
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds9/', variables('vmName'), '-datadisk9.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk10",
+              "diskSizeGB": "1023",
+              "lun": 10,
+              "vhd": {
+                "Uri": "[concat('http://', copyIndex(), variables('storageAccountName'), '.blob.core.windows.net/vhds10/', variables('vmName'), '-datadisk10.vhd')]"
               },
               "createOption": "Empty"
             }
@@ -310,7 +404,7 @@
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('vmName'), copyIndex(), '/prepareDisks')]",
       "apiVersion": "[parameters('resourceAPIVersion')]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "copy": {
         "name": "dataNodeNicLoop",
         "count": "[parameters('vmCount')]"
@@ -328,7 +422,7 @@
             "[concat(parameters('scriptsUri'), '/scripts/prepare-datanode-disks.sh')]",
             "[concat(parameters('scriptsUri'), '/scripts/initialize-node.sh')]"
           ],
-          "commandToExecute": "[concat('sh initialize-node.sh \"', parameters('vmSpec').adminUserName, '\" ', 'datanode', ' \"', concat(variables('vmName'), copyIndex(),parameters('vmSpec').dnsNameSuffix), '\" \"', parameters('vmSpec').dns1IP, '\" \"', parameters('vmSpec').dns2IP, '\" \"', parameters('vmSpec').dns1Name, '\" \"', parameters('vmSpec').dns2Name, '\" \"', parameters('vmSpec').hadoopAdmin, '\" \"', parameters('vmSpec').domainName, '\" >> /home/$ADMINUSER/initialize-datanode.log 2>&1')]"
+          "commandToExecute": "[concat('sh initialize-node.sh \"', variables('masterIP'), '\" \"', variables('workerIP'), '\" \"', parameters('dnsNamePrefix'), '\" \"', reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn, '\" ', parameters('clusterSpec').masterNodeCount, ' ', parameters('clusterSpec').dataNodeCount, ' \"', parameters('vmSpec').adminUserName, '\" ', 'datanode', ' >> /home/$ADMINUSER/initialize-datanode.log 2>&1')]"
         }
       }
     }

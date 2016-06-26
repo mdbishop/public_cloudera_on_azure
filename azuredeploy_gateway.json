@@ -1,10 +1,10 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01-preview/deploymentTemplate.json",
-  "contentVersion": "1.0.0.0",
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "contentVersion": "1.0.0.1",
   "parameters": {
     "adminUserName": {
       "type": "string",
-      "defaultValue": "testuser",
+      "defaultValue": "adminuser",
       "metadata": {
         "description": "Admin user name for the Virtual Machines"
       }
@@ -71,7 +71,7 @@
     },
     "region": {
       "type": "string",
-      "defaultValue": "westeurope",
+      "defaultValue": "useast2",
       "metadata": {
         "description": "Location where resources will be provisioned"
       }
@@ -85,21 +85,21 @@
     },
     "addressPrefix": {
       "type": "string",
-      "defaultValue": "10.0.0.0/24",
+      "defaultValue": "172.18.0.0/20",
       "metadata": {
         "description": "Address prefix for the VNet"
       }
     },
     "subnetPrefix": {
       "type": "string",
-      "defaultValue": "10.0.0.0/24",
+      "defaultValue": "172.18.2.0/24",
       "metadata": {
         "description": "Subnet Prefix"
       }
     },
     "nodeAddressPrefix": {
       "type": "string",
-      "defaultValue": "10.0.0.",
+      "defaultValue": "172.18.2.",
       "metadata": {
         "description": "Prefix of the nodes IP"
       }
@@ -112,7 +112,7 @@
     },
     "virtualNetworkName": {
       "type": "string",
-      "defaultValue": "clouderavnet",
+      "defaultValue": "clouderanet",
       "metadata": {
         "description": "The name of the virtual network provisioned for the deployment"
       }
@@ -122,7 +122,7 @@
     },
     "subnetName": {
       "type": "string",
-      "defaultValue": "clouderasubnet",
+      "defaultValue": "public",
       "metadata": {
         "description": "Subnet name for the virtual network where resources will be provisioned"
       }
@@ -131,7 +131,7 @@
       "type": "int",
       "defaultValue": 1,
       "metadata": {
-        "description": "Number of data nodes for Prod, default to 3"
+        "description": "Number of data nodes for Prod, default to 1"
       }
     },
     "vmSize": {
@@ -180,7 +180,7 @@
         "mode": "Incremental",
         "templateLink": {
           "uri": "[concat(variables('scriptsUri'), '/gateway-node.json')]",
-          "contentVersion": "1.0.0.0"
+          "contentVersion": "1.0.0.1"
         },
         "parameters": {
           "dnsNamePrefix": {

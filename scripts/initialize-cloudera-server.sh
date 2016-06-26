@@ -36,6 +36,12 @@ service cloudera-scm-server start >> /tmp/initialize-cloudera-server.log
 while ! (exec 6<>/dev/tcp/$(hostname)/7180) ; do log 'Waiting for cloudera-scm-server to start...'; sleep 15; done
 log "END: master node deployments"
 
+# Set up python
+rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm >> /tmp/initialize-cloudera-server.log 2>> /tmp/initialize-cloudera-server.err
+yum -y install python-pip >> /tmp/initialize-cloudera-server.log
+pip install cm_api >> /tmp/initialize-cloudera-server.log
+
+
 # trap file to indicate done
 log "creating file to indicate finished"
 touch /tmp/readyFile

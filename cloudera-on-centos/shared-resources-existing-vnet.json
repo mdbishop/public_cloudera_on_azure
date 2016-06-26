@@ -1,12 +1,9 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.1",
   "parameters": {
     "resourceAPIVersion":{
       "type":"string"
-    },
-    "region": {
-      "type": "string"
     },
     "networkSpec": {
       "type": "object"
@@ -24,21 +21,21 @@
       "apiVersion": "[parameters('resourceAPIVersion')]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[parameters('masterNodeASName')]",
-      "location": "[parameters('region')]",
-      "properties": {}
+      "location": "[resourceGroup().location]",
+      "properties": { }
     },
     {
       "apiVersion": "[parameters('resourceAPIVersion')]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[parameters('dataNodeASName')]",
-      "location": "[parameters('region')]",
-      "properties": {}
+      "location": "[resourceGroup().location]",
+      "properties": { }
     },
     {
       "apiVersion": "[parameters('resourceAPIVersion')]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[concat(parameters('networkSpec').virtualNetworkName, '-sg')]",
-      "location": "[parameters('region')]",
+      "location": "[resourceGroup().location]",
       "properties": {
         "securityRules": [
           {
@@ -206,6 +203,34 @@
               "destinationAddressPrefix": "*",
               "access": "Allow",
               "priority": 111,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Impala.JDBC",
+            "properties": {
+              "description": "Allow Impala JDBC traffic",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "21050",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 112,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Impala.Shell",
+            "properties": {
+              "description": "Allow Impala Shell traffic",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "21000",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 113,
               "direction": "Inbound"
             }
           }
