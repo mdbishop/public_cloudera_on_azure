@@ -28,7 +28,7 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('dnsNamePrefix'), '-mn0', '/prepareDisks')]",
-      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "apiVersion": "2015-01-01",
       "location": "[parameters('region')]",
       "properties": {
         "publisher": "Microsoft.OSTCExtensions",
