@@ -231,9 +231,6 @@
           "region": {
             "value": "[parameters('region')]"
           },
-          "resourceAPIVersion":{
-            "value":"[variables('resourceAPIVersion')]"
-          },
           "networkSpec": {
             "value": "[variables('networkSpec')]"
           },

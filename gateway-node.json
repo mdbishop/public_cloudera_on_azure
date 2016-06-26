@@ -1,6 +1,12 @@
 {
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
   "contentVersion": "1.0.0.1",
+  "outputs": {
+    "fqdn": {
+      "type": "string",
+      "value": "[reference(concat(variables('publicIPAddressName'), '0')).dnsSettings.fqdn]"
+    }
+  },
   "parameters": {
     "dnsNamePrefix": {
       "type": "string"
@@ -24,17 +30,11 @@
       "type": "object"
     }
   },
-  "variables": {
-    "vmName": "[concat(parameters('dnsNamePrefix'), '-gw')]",
-    "nicName": "[concat(variables('vmName'), '-nic')]",
-    "publicIPAddressName": "[concat(variables('vmName'), '-publicIP')]",
-    "storageAccountName": "[concat('gw', parameters('storageAccount').prefix)]"
-  },
   "resources": [
     {
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[concat(variables('storageAccountName'), copyIndex())]",
-      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "apiVersion": "2016-01-01",
       "location": "[parameters('region')]",
       "copy": {
         "name": "storageAccountLoop",
@@ -45,7 +45,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "apiVersion": "2016-03-30",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[concat(variables('publicIPAddressName'), copyIndex())]",
       "location": "[parameters('region')]",
@@ -61,7 +61,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "apiVersion": "2016-03-30",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('nicName'), copyIndex())]",
       "location": "[parameters('region')]",
@@ -91,7 +91,7 @@
       }
     },
     {
-      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(variables('vmName'), copyIndex())]",
       "plan": {
@@ -113,7 +113,7 @@
           "vmSize": "[parameters('vmSpec').vmSize]"
         },
         "osProfile": {
-          "computername": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",
+          "computerName": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",
           "adminUsername": "[parameters('vmSpec').adminUserName]",
           "adminPassword": "[parameters('vmSpec').adminPassword]",
           "linuxConfiguration": {
@@ -121,15 +121,13 @@
           }
         },
         "storageProfile": {
-          "imageReference":
-          {
+          "imageReference": {
             "publisher": "cloudera",
             "offer": "cloudera-centos-6",
             "sku": "CLOUDERA-CENTOS-6",
-            "version": "1.0.0"
+            "version": "latest"
           },
-          "osDisk":
-          {
+          "osDisk": {
             "name": "osdisk",
             "vhd": {
               "uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds/', variables('vmName'), copyIndex(), '.vhd')]"
@@ -143,7 +141,7 @@
               "diskSizeGB": "1023",
               "lun": 0,
               "vhd": {
-                "Uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds0/', variables('vmName'), '-datadisk0.vhd')]"
+                "uri": "[concat('http://', variables('storageAccountName'), copyIndex(), '.blob.core.windows.net/vhds0/', variables('vmName'), '-datadisk0.vhd')]"
               },
               "createOption": "Empty"
             }
@@ -161,8 +159,8 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('vmName'), copyIndex(), '/prepareDisks')]",
-      "apiVersion": "2015-01-01",
-      "resourceAPIVersion":"2015-06-15",
+      "apiVersion": "2015-06-15",
+      "resourceAPIVersion": "2015-06-15",
       "location": "[parameters('region')]",
       "copy": {
         "name": "nameNodeNicLoop",
@@ -185,10 +183,10 @@
       }
     }
   ],
-  "outputs": {
-    "fqdn": {
-      "type": "string",
-      "value": "[reference(concat(variables('publicIPAddressName'), '0')).dnsSettings.fqdn]"
-    }
+  "variables": {
+    "vmName": "[concat(parameters('dnsNamePrefix'), '-gw')]",
+    "nicName": "[concat(variables('vmName'), '-nic')]",
+    "publicIPAddressName": "[concat(variables('vmName'), '-publicIP')]",
+    "storageAccountName": "[concat('gw', parameters('storageAccount').prefix)]"
   }
 }
