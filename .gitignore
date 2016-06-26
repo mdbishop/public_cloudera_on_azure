@@ -1,2 +1,3 @@
-deploy-cloudera.sh
-azuredeploy-parameters.json
+azuredeploy.parameters.json
+.idea/
+schema/
