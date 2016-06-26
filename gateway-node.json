@@ -41,7 +41,7 @@
         "count": "[parameters('vmCount')]"
       },
       "properties": {
-        "accountType": "Premium_LRS"
+        "accountType": "[parameters('storageAccount').type]"
       }
     },
     {
