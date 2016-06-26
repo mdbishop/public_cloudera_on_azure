@@ -169,6 +169,10 @@
       "metadata": {
         "description": "The size of the VMs deployed in the cluster (Defaults to Standard_D14)"
       }
+    },
+    "resourceAPIVersion": {
+      "type": "string",
+      "defaultValue": "2015-06-15"
     }
   },
   "variables": {
