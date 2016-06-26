@@ -136,7 +136,7 @@
     },
     "vmSize": {
       "type": "string",
-      "defaultValue": "Standard_DS14",
+      "defaultValue": "Standard_DS5_v2",
       "metadata": {
         "description": "The size of the VMs deployed in the cluster (Defaults to Standard_D14)"
       }
