@@ -89,7 +89,7 @@
     },
     "region": {
       "type": "string",
-      "defaultValue": "useast2",
+      "defaultValue": "eastus2",
       "metadata": {
         "description": "Location where resources will be provisioned"
       }
