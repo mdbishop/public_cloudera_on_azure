@@ -10,7 +10,8 @@
       }
     },
     "resourceAPIVersion":{
-      "type": "string"
+      "type": "string",
+      "defaultValue": "2015-06-15"
     },
     "adminPassword": {
       "type": "securestring",
@@ -74,7 +75,7 @@
     },
     "region": {
       "type": "string",
-      "defaultValue": "useast2",
+      "defaultValue": "eastus2",
       "metadata": {
         "description": "Location where resources will be provisioned"
       }
@@ -200,17 +201,14 @@
           "storageAccount": {
             "value": "[variables('storageAccount')]"
           },
-          "resourceAPIVersion":{
-            "value":"[variables('resourceAPIVersion')]"
-          },
           "vmCount": {
             "value": "[parameters('numberOfNodes')]"
           },
-          "vmSpec": {
-            "value": "Standard_DS13_v2"
-          },
           "networkSpec": {
             "value": "[variables('networkSpec')]"
+          },
+          "vmSpec": {
+            "value": "[variables('vmSpec')]"
           }
         }
       }
