@@ -2,11 +2,11 @@
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
   "contentVersion": "1.0.0.1",
   "parameters": {
-    "adminUserName": {
+    "addressPrefix": {
       "type": "string",
-      "defaultValue": "azureuser",
+      "defaultValue": "172.18.0.0/20",
       "metadata": {
-        "description": "Admin user name for the Virtual Machines"
+        "description": "Address prefix for the VNet"
       }
     },
     "adminPassword": {
@@ -15,10 +15,35 @@
         "description": "Admin password for the VMs (A mix of upper and lower-case characters, digits and symbols)"
       }
     },
-    "storageAccountPrefix": {
+    "adminUserName": {
+      "type": "string",
+      "defaultValue": "azureuser",
+      "metadata": {
+        "description": "Admin user name for the Virtual Machines"
+      }
+    },
+    "dns1IP": {
       "type": "string",
       "metadata": {
-        "description": "Unique namespace for the Storage Account where the VM disks will be placed (alphahumeric characters only)"
+        "description": "DNS IP"
+      }
+    },
+    "dns1Name": {
+      "type": "string",
+      "metadata": {
+        "description": "DNS Name"
+      }
+    },
+    "dns2IP": {
+      "type": "string",
+      "metadata": {
+        "description": "DNS IP"
+      }
+    },
+    "dns2Name": {
+      "type": "string",
+      "metadata": {
+        "description": "DNS Name"
       }
     },
     "dnsNamePrefix": {
@@ -33,24 +58,6 @@
         "description": "Internal DNS suffix"
       }
     },
-    "vnetNewOrExisting" : {
-      "type" : "string",
-      "defaultValue": "new",
-      "allowedValues": [
-        "new",
-        "existing"
-      ],
-      "metadata": {
-        "description": "Indicator for new or exiting Virtual Network"
-      }
-    },
-    "virtualNetworkRGName": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Resource Group Name for Vnet. For new VNet leave it empty, otherwise type in existing resource group name"
-      }
-    },
     "domainName": {
       "type": "string",
       "metadata": {
@@ -63,28 +70,18 @@
         "description": "Hadoop admin who needs admin rights"
       }
     },
-    "dns1IP": {
+    "nodeAddressPrefix": {
       "type": "string",
+      "defaultValue": "172.18.1.",
       "metadata": {
-        "description": "DNS IP"
+        "description": "Prefix of the nodes IP"
       }
     },
-    "dns2IP": {
-      "type": "string",
+    "numberOfDataNodes": {
+      "type": "int",
+      "defaultValue": 3,
       "metadata": {
-        "description": "DNS IP"
-      }
-    },
-    "dns1Name": {
-      "type": "string",
-      "metadata": {
-        "description": "DNS Name"
-      }
-    },
-    "dns2Name": {
-      "type": "string",
-      "metadata": {
-        "description": "DNS Name"
+        "description": "Number of data nodes for Prod, default to 3"
       }
     },
     "region": {
@@ -94,6 +91,18 @@
         "description": "Location where resources will be provisioned"
       }
     },
+    "scriptUri": {
+      "type": "string",
+      "metadata": {
+        "description": "The public github repo where the scripts are."
+      }
+    },
+    "storageAccountPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique namespace for the Storage Account where the VM disks will be placed (alphahumeric characters only)"
+      }
+    },
     "storageAccountType": {
       "type": "string",
       "defaultValue": "Premium_LRS",
@@ -101,11 +110,11 @@
         "description": "The type of the Storage Account to be created (Default to Standard_LRS)"
       }
     },
-    "addressPrefix": {
+    "subnetName": {
       "type": "string",
-      "defaultValue": "172.18.0.0/20",
+      "defaultValue": "private",
       "metadata": {
-        "description": "Address prefix for the VNet"
+        "description": "Subnet name for the virtual network where resources will be provisioned"
       }
     },
     "subnetPrefix": {
@@ -113,36 +122,6 @@
       "defaultValue": "172.18.1.0/24",
       "metadata": {
         "description": "Subnet Prefix"
-      }
-    },
-    "nodeAddressPrefix": {
-      "type": "string",
-      "defaultValue": "172.18.1.",
-      "metadata": {
-        "description": "Prefix of the nodes IP"
-      }
-    },
-    "scriptUri": {
-      "type": "string",
-      "metadata": {
-        "description": "The public github repo where the scripts are."
-      }
-    },
-    "virtualNetworkName": {
-      "type": "string",
-      "defaultValue": "clouderanet",
-      "metadata": {
-        "description": "The name of the virtual network provisioned for the deployment"
-      }
-    },
-    "vnetResourceGroup": {
-      "type": "string"
-    },
-    "subnetName": {
-      "type": "string",
-      "defaultValue": "private",
-      "metadata": {
-        "description": "Subnet name for the virtual network where resources will be provisioned"
       }
     },
     "tshirtSize": {
@@ -156,11 +135,18 @@
         "description": "T-shirt size of the Cloudera cluster (Eval, Prod)"
       }
     },
-    "numberOfDataNodes": {
-      "type": "int",
-      "defaultValue": 3,
+    "virtualNetworkName": {
+      "type": "string",
+      "defaultValue": "clouderanet",
       "metadata": {
-        "description": "Number of data nodes for Prod, default to 3"
+        "description": "The name of the virtual network provisioned for the deployment"
+      }
+    },
+    "virtualNetworkRGName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource Group Name for Vnet. For new VNet leave it empty, otherwise type in existing resource group name"
       }
     },
     "vmSize": {
@@ -169,6 +155,20 @@
       "metadata": {
         "description": "The size of the VMs deployed in the cluster (Defaults to Standard_D14)"
       }
+    },
+    "vnetNewOrExisting": {
+      "type": "string",
+      "defaultValue": "new",
+      "allowedValues": [
+        "new",
+        "existing"
+      ],
+      "metadata": {
+        "description": "Indicator for new or exiting Virtual Network"
+      }
+    },
+    "vnetResourceGroup": {
+      "type": "string"
     }
   },
   "variables": {
@@ -231,6 +231,9 @@
           "region": {
             "value": "[parameters('region')]"
           },
+          "resourceAPIVersion":{
+            "value":"[variables('resourceAPIVersion')]"
+          },
           "networkSpec": {
             "value": "[variables('networkSpec')]"
           },
@@ -257,9 +260,6 @@
           "contentVersion": "1.0.0.1"
         },
         "parameters": {
-          "resourceAPIVersion":{
-            "value":"[variables('resourceAPIVersion')]"
-          },
           "dnsNamePrefix": {
             "value": "[parameters('dnsNamePrefix')]"
           },
