@@ -313,7 +313,7 @@
           "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('vmSpec').masterNodeASName)]"
         },
         "hardwareProfile": {
-          "vmSize": "[parameters('vmSpec').vmSize]"
+          "vmSize": "Standard_DS5_v2"
         },
         "osProfile": {
           "computerName": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",

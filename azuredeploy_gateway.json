@@ -200,7 +200,7 @@
             "value": "[parameters('numberOfNodes')]"
           },
           "vmSpec": {
-            "value": "[variables('vmSpec')]"
+            "value": "Standard_DS13_v2"
           },
           "networkSpec": {
             "value": "[variables('networkSpec')]"
