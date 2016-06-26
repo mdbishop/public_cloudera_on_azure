@@ -9,6 +9,9 @@
         "description": "Admin user name for the Virtual Machines"
       }
     },
+    "resourceAPIVersion":{
+      "type": "string"
+    },
     "adminPassword": {
       "type": "securestring",
       "metadata": {
@@ -143,6 +146,8 @@
     }
   },
   "variables": {
+    "templateAPIVersion":"2015-11-01",
+    "resourceAPIVersion":"2015-06-15",
     "scriptsUri": "[parameters('scriptUri')]",
     "storageAccount": {
       "prefix": "[parameters('storageAccountPrefix')]",
@@ -194,6 +199,9 @@
           },
           "storageAccount": {
             "value": "[variables('storageAccount')]"
+          },
+          "resourceAPIVersion":{
+            "value":"[variables('resourceAPIVersion')]"
           },
           "vmCount": {
             "value": "[parameters('numberOfNodes')]"
