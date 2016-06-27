@@ -1,17 +1,13 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
-  "contentVersion": "1.0.0.1",
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01-preview/deploymentTemplate.json",
+  "contentVersion": "1.0.0.0",
   "parameters": {
     "adminUserName": {
       "type": "string",
-      "defaultValue": "adminuser",
+      "defaultValue": "testuser",
       "metadata": {
         "description": "Admin user name for the Virtual Machines"
       }
-    },
-    "resourceAPIVersion":{
-      "type": "string",
-      "defaultValue": "2015-06-15"
     },
     "adminPassword": {
       "type": "securestring",
@@ -75,7 +71,7 @@
     },
     "region": {
       "type": "string",
-      "defaultValue": "eastus2",
+      "defaultValue": "westeurope",
       "metadata": {
         "description": "Location where resources will be provisioned"
       }
@@ -89,21 +85,21 @@
     },
     "addressPrefix": {
       "type": "string",
-      "defaultValue": "172.18.0.0/20",
+      "defaultValue": "10.0.0.0/24",
       "metadata": {
         "description": "Address prefix for the VNet"
       }
     },
     "subnetPrefix": {
       "type": "string",
-      "defaultValue": "172.18.2.0/24",
+      "defaultValue": "10.0.0.0/24",
       "metadata": {
         "description": "Subnet Prefix"
       }
     },
     "nodeAddressPrefix": {
       "type": "string",
-      "defaultValue": "172.18.2.",
+      "defaultValue": "10.0.0.",
       "metadata": {
         "description": "Prefix of the nodes IP"
       }
@@ -116,7 +112,7 @@
     },
     "virtualNetworkName": {
       "type": "string",
-      "defaultValue": "clouderanet",
+      "defaultValue": "clouderavnet",
       "metadata": {
         "description": "The name of the virtual network provisioned for the deployment"
       }
@@ -126,7 +122,7 @@
     },
     "subnetName": {
       "type": "string",
-      "defaultValue": "public",
+      "defaultValue": "clouderasubnet",
       "metadata": {
         "description": "Subnet name for the virtual network where resources will be provisioned"
       }
@@ -135,20 +131,18 @@
       "type": "int",
       "defaultValue": 1,
       "metadata": {
-        "description": "Number of data nodes for Prod, default to 1"
+        "description": "Number of data nodes for Prod, default to 3"
       }
     },
     "vmSize": {
       "type": "string",
-      "defaultValue": "Standard_DS5_v2",
+      "defaultValue": "Standard_DS14",
       "metadata": {
         "description": "The size of the VMs deployed in the cluster (Defaults to Standard_D14)"
       }
     }
   },
   "variables": {
-    "templateAPIVersion":"2015-11-01",
-    "resourceAPIVersion":"2015-06-15",
     "scriptsUri": "[parameters('scriptUri')]",
     "storageAccount": {
       "prefix": "[parameters('storageAccountPrefix')]",
@@ -173,7 +167,7 @@
       "privateIPPrefix": "[parameters('nodeAddressPrefix')]",
       "virtualNetworkName": "[parameters('virtualNetworkName')]",
       "virtualNetworkSubnetName": "[parameters('subnetName')]",
-      "gatewayNodeAddressStart": 10,
+      "gatewayNodeAddressStart": 5,
       "VnetID": "[resourceId(parameters('vnetResourceGroup'),'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
     }
   },
@@ -181,12 +175,12 @@
     {
       "name": "gateway-node",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2015-01-01",
       "properties": {
         "mode": "Incremental",
         "templateLink": {
           "uri": "[concat(variables('scriptsUri'), '/gateway-node.json')]",
-          "contentVersion": "1.0.0.1"
+          "contentVersion": "1.0.0.0"
         },
         "parameters": {
           "dnsNamePrefix": {
@@ -204,11 +198,11 @@
           "vmCount": {
             "value": "[parameters('numberOfNodes')]"
           },
-          "networkSpec": {
-            "value": "[variables('networkSpec')]"
-          },
           "vmSpec": {
             "value": "[variables('vmSpec')]"
+          },
+          "networkSpec": {
+            "value": "[variables('networkSpec')]"
           }
         }
       }

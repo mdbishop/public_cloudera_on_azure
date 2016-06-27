@@ -110,7 +110,7 @@
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "Standard_DS5_v2"
+          "vmSize": "[parameters('vmSpec').vmSize]"
         },
         "osProfile": {
           "computerName": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",
@@ -157,10 +157,7 @@
       }
     },
     {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmName'), copyIndex(), '/prepareDisks')]",
       "apiVersion": "2015-06-15",
-      "location": "[parameters('region')]",
       "copy": {
         "name": "nameNodeNicLoop",
         "count": "[parameters('vmCount')]"
@@ -168,6 +165,8 @@
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'), copyIndex())]"
       ],
+      "location": "[parameters('region')]",
+      "name": "[concat(variables('vmName'), copyIndex(), '/prepareDisks')]",
       "properties": {
         "publisher": "Microsoft.OSTCExtensions",
         "type": "CustomScriptForLinux",
@@ -180,7 +179,8 @@
           ],
           "commandToExecute": "[concat('sh initialize-node.sh \"', parameters('vmSpec').adminUserName, '\" ', 'gateway', ' \"', concat(variables('vmName'), copyIndex(),parameters('vmSpec').dnsNameSuffix), '\" \"', parameters('vmSpec').dns1IP, '\" \"', parameters('vmSpec').dns2IP, '\" \"', parameters('vmSpec').dns1Name, '\" \"', parameters('vmSpec').dns2Name, '\" \"', parameters('vmSpec').hadoopAdmin, '\" \"', parameters('vmSpec').domainName, '\" >> /home/$ADMINUSER/initialize-gatewaynode.log 2>&1')]"
         }
-      }
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
     }
   ],
   "variables": {
