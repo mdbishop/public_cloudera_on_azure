@@ -159,3 +159,12 @@ sed -i "s/.*HOSTNAME.*/HOSTNAME=${MYHOSTNAME}/g" /etc/sysconfig/network
 #sed -i "s/UsePAM\s*yes/UsePAM no/" /etc/ssh/sshd_config
 #sed -i "s/PasswordAuthentication\s*yes/PasswordAuthentication no/" /etc/ssh/sshd_config
 #/etc/init.d/sshd restart
+
+bash yum update && yum upgrade -y
+#bash yum install -y ./jdk-8u92-linux-x64.rpm
+bash yum install -y htop pssh zsh yum-presto yum-plugin-keys v8 uuid unixODBC turbojpeg tuned fail2ban tbb-devel
+bash yum install -y snappy-devel rubygems re2-devel protobuf-devel postgresql-devel openblas-threads openblas-devel
+bash yum install -y msgpack-devel mlpack mlpack-devel ca-certificates dstat boost boost-devel
+bash yum groupinstall -y "Development tools"
+bash chkconfig tuned on && service tuned start
+bash chkconfig fail2ban on && service fail2ban start
